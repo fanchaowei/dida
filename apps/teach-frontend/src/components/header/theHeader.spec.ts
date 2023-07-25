@@ -1,33 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRouter } from 'vue-router'
 import { useGoto } from './theHeader'
+import { RouteNames } from '@/router/const'
 
+// 因为 vue-router 是 Vue 实例的一个插件，需要在 setup 环境里才能使用，所以需要 mock
 vi.mock('vue-router')
+const mockFn = vi.fn()
 
-const pushFn = vi.fn()
 vi.mocked(useRouter as () => { push: Function }).mockImplementation(() => {
   return {
-    push: pushFn,
+    push: mockFn,
   }
 })
 
-describe('theHeader', () => {
+describe('TheHeader', () => {
   beforeEach(() => {
-    pushFn.mockClear()
+    // 重置 mock
+    mockFn.mockClear()
   })
-  it('should be go to home page', () => {
+
+  it('点击后应该返回主页', () => {
     const { goToHome } = useGoto()
-
     goToHome()
-
-    expect(pushFn).toBeCalledWith({ name: 'Home' })
+    // 我们主要验证调用方法后是否走了 router.push
+    expect(mockFn).toHaveBeenCalledWith({ name: RouteNames.HOME })
   })
 
-  it('should be go to settings page', () => {
+  it('点击后应进入设置页面', () => {
     const { goToSettings } = useGoto()
-
     goToSettings()
-
-    expect(pushFn).toBeCalledWith({ name: 'Settings' })
+    expect(mockFn).toHaveBeenCalledWith({ name: RouteNames.SETTINGS })
   })
 })
