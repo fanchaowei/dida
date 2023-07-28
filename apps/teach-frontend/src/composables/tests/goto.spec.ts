@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { useGoto } from '@/composables/goto'
+import { describe, expect, it, vi } from 'vitest'
+import { GITHUB_URL, openGithub, useGoto } from '../goto'
 import { RouteNames } from '@/router/const'
 import { useSetup } from '@/tests/helper'
 
@@ -22,5 +22,11 @@ describe('TheHeader', () => {
     })
 
     expect(router.push).toHaveBeenCalledWith({ name: RouteNames.SETTINGS })
+  })
+
+  it('点击后应跳转网页至 github', () => {
+    window.open = vi.fn()
+    openGithub()
+    expect(window.open).toHaveBeenCalledWith(GITHUB_URL)
   })
 })
