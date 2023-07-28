@@ -1,31 +1,33 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
-import { showCommandModal, useCommandModal } from '../commandModal'
+import { useCommandModal } from '../commandModal'
 import * as misc from '@/composables/misc'
 import { fireEvent, useSetup } from '@/tests/helper'
 
 describe('commandModal', () => {
   beforeEach(() => {
+    const { showCommandModal } = useCommandModal()
     showCommandModal.value = false
   })
   afterAll(() => {
+    const { showCommandModal } = useCommandModal()
     showCommandModal.value = false
   })
 
   it('打开搜索', () => {
-    const { openCommandModal } = useCommandModal()
+    const { openCommandModal, showCommandModal } = useCommandModal()
     openCommandModal()
     expect(showCommandModal.value).toBe(true)
   })
 
   it('关闭搜索', () => {
-    const { closeCommandModal } = useCommandModal()
+    const { closeCommandModal, showCommandModal } = useCommandModal()
     closeCommandModal()
     expect(showCommandModal.value).toBe(false)
   })
 
   it('在 Mac 上通过快捷键 cmd + k 打开搜索', () => {
-    const { registerKeyboardShortcut } = useCommandModal()
+    const { registerKeyboardShortcut, showCommandModal } = useCommandModal()
     // 因为 registerKeyboardShortcut 方法需要调用 useIsMac 方法来判断是否是 Mac ，所以需要 mock 掉 useIsMac 方法
     // 这种方式是最佳的 mock 方式，即不影响同文件内的其他方法，也不影响其他文件
     vi.spyOn(misc, 'useIsMac').mockReturnValue(computed(() => true))
@@ -42,7 +44,7 @@ describe('commandModal', () => {
   })
 
   it('在 win 上通过快捷键 ctrl + k 打开搜索', () => {
-    const { registerKeyboardShortcut } = useCommandModal()
+    const { registerKeyboardShortcut, showCommandModal } = useCommandModal()
     vi.spyOn(misc, 'useIsMac').mockReturnValue(computed(() => false))
     const { wrapper } = useSetup(() => {
       registerKeyboardShortcut()

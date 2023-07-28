@@ -16,9 +16,16 @@ export function useGoto() {
     })
   }
 
+  function gotoSettingsTheme() {
+    router.push({
+      name: RouteNames.SETTINGS_THEME,
+    })
+  }
+
   return {
     gotoHome,
     gotoSettings,
+    gotoSettingsTheme,
   }
 }
 

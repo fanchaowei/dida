@@ -1,7 +1,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useIsMac } from '@/composables'
 
-export const showCommandModal = ref(false)
+const showCommandModal = ref(false)
 
 export function useCommandModal() {
   function openCommandModal() {
@@ -35,6 +35,7 @@ export function useCommandModal() {
   }
 
   return {
+    showCommandModal,
     openCommandModal,
     closeCommandModal,
     registerKeyboardShortcut,
