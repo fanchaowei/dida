@@ -7,6 +7,7 @@ import Unocss from 'unocss/vite'
 export default defineConfig({
   test: {
     environment: 'happy-dom',
+    setupFiles: './vitest.setup.ts',
   },
   server: {
     proxy: {
