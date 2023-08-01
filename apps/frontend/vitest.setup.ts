@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto'
 import { config } from '@vue/test-utils'
 import {
   VueRouterMock,
@@ -23,3 +24,9 @@ function setupRouterMock() {
 }
 
 setupRouterMock()
+
+const originalConsoleWarn = console.warn
+console.warn = (log: string) => {
+  if (!log.includes('[Vue Router warn]'))
+    originalConsoleWarn(log)
+}
