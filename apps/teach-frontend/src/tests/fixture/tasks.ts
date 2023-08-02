@@ -11,8 +11,8 @@ export const tasks = [
   },
   {
     id: '1',
-    title: '写代码',
-    content: '今天写代码了嘛',
+    title: '运动',
+    content: '今天写运动了嘛',
     status: TaskStatus.COMPLETED,
     projectId: '1',
     position: 2,
