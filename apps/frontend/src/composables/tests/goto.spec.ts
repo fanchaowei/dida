@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { useGoto } from '../goto'
+import { GITHUB_URL, goToLogin, openGithub, useGoto } from '../goto'
 import { useSetup } from '@/tests/helper'
+import { RouteNames } from '@/router/const'
+import { setupRouterMock } from '@/tests/helper/router'
 
 describe('goto', () => {
   it('should be go to Settings', () => {
@@ -9,7 +11,7 @@ describe('goto', () => {
       gotoSettings()
     })
 
-    expect(router.push).toBeCalledWith({ name: 'Settings' })
+    expect(router.push).toBeCalledWith({ name: RouteNames.SETTINGS })
   })
 
   it('should be go to Home', () => {
@@ -18,17 +20,29 @@ describe('goto', () => {
       gotoHome()
     })
 
-    expect(router.push).toBeCalledWith({ name: 'Home' })
+    expect(router.push).toBeCalledWith({ name: RouteNames.HOME })
   })
 
-  it('should be go to github', () => {
-    window.open = vi.fn()
-
-    useSetup(() => {
-      const { gotoGithub } = useGoto()
-      gotoGithub()
+  it('should be go to SettingsTheme', () => {
+    const { router } = useSetup(() => {
+      const { gotoSettingsTheme } = useGoto()
+      gotoSettingsTheme()
     })
 
-    expect(window.open).toBeCalledWith('https://github.com/cuixueshe/dida')
+    expect(router.push).toBeCalledWith({ name: RouteNames.SETTINGS_THEME })
+  })
+
+  it('should be open github url', () => {
+    window.open = vi.fn()
+
+    openGithub()
+
+    expect(window.open).toBeCalledWith(GITHUB_URL)
+  })
+
+  it('should be go to login', async () => {
+    const router = setupRouterMock()
+    goToLogin()
+    expect(router.replace).toBeCalledWith({ name: RouteNames.LOGIN })
   })
 })

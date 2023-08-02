@@ -4,6 +4,7 @@ export function useSetup<V>(setup: () => V) {
   const comp = {
     setup,
     render() {},
+    setup,
   }
   // 挂载组件
   const wrapper = mount(comp)

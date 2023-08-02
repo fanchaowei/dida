@@ -1,6 +1,5 @@
 export const fireEvent = {
-  keydown(options: KeyboardEventInit) {
-    const event = new KeyboardEvent('keydown', options)
-    window.dispatchEvent(event)
+  keyDown(eventInitDict?: KeyboardEventInit | undefined) {
+    window.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
   },
 }

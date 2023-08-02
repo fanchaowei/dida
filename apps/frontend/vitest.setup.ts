@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto'
 import { config } from '@vue/test-utils'
 import {
   VueRouterMock,
@@ -6,15 +7,26 @@ import {
 } from 'vue-router-mock'
 import { beforeEach, vi } from 'vitest'
 
-// init vue-router
-const router = createRouterMock({
-  spy: {
-    create: fn => vi.fn(fn),
-    reset: spy => spy.mockReset(),
-  },
-})
-beforeEach(() => {
-  injectRouterMock(router)
-})
+function setupRouterMock() {
+  const router = createRouterMock({
+    spy: {
+      create: fn => vi.fn(fn),
+      reset: spy => spy.mockClear(),
+    },
+  })
 
-config.plugins.VueWrapper.install(VueRouterMock)
+  beforeEach(() => {
+    router.reset()
+    injectRouterMock(router)
+  })
+
+  config.plugins.VueWrapper.install(VueRouterMock)
+}
+
+setupRouterMock()
+
+const originalConsoleWarn = console.warn
+console.warn = (log: string) => {
+  if (!log.includes('[Vue Router warn]'))
+    originalConsoleWarn(log)
+}

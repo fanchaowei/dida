@@ -1,76 +1,118 @@
-import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
-import flushPromises from 'flush-promises'
-import { inputStateMachine, resetSearch, search } from '../search'
-import { resetSearchCommands, searchCommands } from '../searchCommands'
-import { resetSearchTasks, searchTasks } from '../searchTasks'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSearch } from '../search'
 
-vi.mock('../searchCommands.ts')
-vi.mock('../searchTasks.ts')
+const searchTasks = vi.fn()
+const resetSearchTasks = vi.fn()
+vi.mock('../searchTasks.ts', () => {
+  return {
+    useSearchTasks() {
+      return {
+        searchTasks,
+        resetSearchTasks,
+      }
+    },
+  }
+})
 
-async function flushWatch() {
-  // 这是为了处理 watch
-  await flushPromises() // 这是为了处理延迟 500ms
-  vi.advanceTimersToNextTimer()
-  // 这是为了处理内部的 await
-  await flushPromises()
-}
+const searchCommands = vi.fn()
+const resetSearchCommands = vi.fn()
+vi.mock('../searchCommands.ts', () => {
+  return {
+    useSearchCommands() {
+      return {
+        searchCommands,
+        resetSearchCommands,
+      }
+    },
+  }
+})
 
-describe('Search', () => {
-  beforeEach(() => {
+describe('search', () => {
+  beforeEach(async () => {
     vi.useFakeTimers()
+
+    const { resetSearch } = useSearch()
+
+    resetSearch()
+
+    await vi.runAllTimersAsync()
+
     vi.clearAllMocks()
   })
+  // 只测试一个关注点
+  it('should be loading is true when search is start', async () => {
+    const { search, loading } = useSearch()
 
-  afterEach(() => {
-    resetSearch()
-  })
-
-  describe('input state machine', () => {
-    it('input state machine change', async () => {
-      search.value = 'code'
-
-      await flushPromises()
-      vi.advanceTimersToNextTimer()
-      expect(inputStateMachine.state.value).toBe('loading')
-
-      await flushPromises()
-      expect(inputStateMachine.state.value).toBe('loadCompleted')
-    })
-
-    it('should be reset when search value is empty', async () => {
-      search.value = 'code'
-      await flushWatch()
-
-      search.value = ''
-      await flushWatch()
-
-      expect(inputStateMachine.state.value).toBe('waitingForInput')
-    })
-  })
-
-  test('should search commands when input contain \'>\'  ', async () => {
-    search.value = '>主页'
-
-    await flushWatch()
-
-    expect(searchCommands).toBeCalledWith('主页')
-  })
-
-  test('should search tasks ', async () => {
     search.value = '吃饭'
 
-    await flushWatch()
+    await vi.advanceTimersToNextTimerAsync()
+
+    expect(loading.value).toBe(true)
+  })
+
+  it('should be loading is false when search is complete', async () => {
+    const { search, loading } = useSearch()
+
+    search.value = '吃饭'
+
+    await vi.runAllTimersAsync()
+
+    expect(loading.value).toBe(false)
+  })
+
+  it('should be searching is true when search is complete', async () => {
+    const { search, searching } = useSearch()
+
+    search.value = '吃饭'
+
+    await vi.runAllTimersAsync()
+
+    expect(searching.value).toBe(true)
+  })
+
+  it('search tasks', async () => {
+    const { search } = useSearch()
+
+    search.value = '吃饭'
+
+    await vi.runAllTimersAsync()
 
     expect(searchTasks).toBeCalledWith('吃饭')
   })
 
-  test('should be reset when reset search', async () => {
+  describe('search commands', () => {
+    it('normal', async () => {
+      const { search } = useSearch()
+
+      search.value = '>主页'
+
+      await vi.runAllTimersAsync()
+
+      expect(searchCommands).toBeCalledWith('主页')
+    })
+
+    it('removes the trailing white space', async () => {
+      const { search } = useSearch()
+
+      search.value = '>主页 '
+
+      await vi.runAllTimersAsync()
+
+      expect(searchCommands).toBeCalledWith('主页')
+    })
+  })
+
+  it('should be reset when search is empty', async () => {
+    const { search, searching, loading } = useSearch()
+
     search.value = '吃饭'
-    await flushWatch()
+    await vi.runAllTimersAsync()
 
     search.value = ''
-    await flushWatch()
+    await vi.runAllTimersAsync()
 
+    expect(searching.value).toBe(false)
+    expect(loading.value).toBe(false)
     expect(resetSearchCommands).toBeCalled()
     expect(resetSearchTasks).toBeCalled()
   })

@@ -36,7 +36,7 @@ describe('commandModal', () => {
     })
 
     // 模拟按下 cmd + k
-    fireEvent.keydown({ key: 'k', metaKey: true })
+    fireEvent.keyDown({ key: 'k', metaKey: true })
     expect(showCommandModal.value).toBe(true)
 
     // 调用生命周期 unmounted，来销毁组件重置测试
@@ -49,7 +49,7 @@ describe('commandModal', () => {
     const { wrapper } = useSetup(() => {
       registerKeyboardShortcut()
     })
-    fireEvent.keydown({ key: 'k', ctrlKey: true })
+    fireEvent.keyDown({ key: 'k', ctrlKey: true })
     expect(showCommandModal.value).toBe(true)
     wrapper.unmount()
   })
