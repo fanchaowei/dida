@@ -111,10 +111,11 @@ describe('tasksStore', () => {
       const task = await useAddTaskFactory()
 
       expect(tasksStore.tasks.length).toBe(1)
-      await tasksStore.moveTaskToProject(task!, liveListProject.id)
+      const projectId = '2'
+      await tasksStore.moveTaskToProject(task!, projectId)
 
       expect(tasksStore.tasks.length).toBe(0)
-      expect(fetchMoveTaskToProject).toBeCalledWith(task!.id, liveListProject.id)
+      expect(fetchMoveTaskToProject).toBeCalledWith(task!.id, projectId)
       expect(tasksStore.currentActiveTask).toBeUndefined()
     })
   })
