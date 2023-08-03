@@ -39,10 +39,7 @@ describe('search', () => {
     // 由于 resetSearch 会触发 watch，所以等待一下
     await vi.runAllTimersAsync()
     // 重置 mock
-    resetSearchCommands.mockClear()
-    resetSearchTasks.mockClear()
-    searchCommands.mockClear()
-    searchTasks.mockClear()
+    vi.clearAllMocks()
     // 重置 fake timers
     vi.useRealTimers()
   })

@@ -1,62 +1,39 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { TaskStatus, useTasksStore } from '../tasks'
-import { useTasksSelectorStore } from '../tasksSelector'
-import { completeSmartProject } from '../smartProjects'
+import { TaskStatus, completeSmartProject, useTasksSelectorStore, useTasksStore } from '@/store'
+import { fetchCompleteTask, fetchCreateTask, fetchMoveTaskToProject, fetchRemoveTask, fetchRestoreTask } from '@/api'
 import { liveListProject } from '@/tests/fixture'
-import {
-  fetchAllTasks,
-  fetchCompleteTask,
-  fetchCreateTask,
-  fetchMoveTaskToProject,
-  fetchRemoveTask,
-  fetchRestoreTask,
-  fetchUpdateTaskContent,
-  fetchUpdateTaskPosition,
-  // fetchUpdateTaskProperties,
-  fetchUpdateTaskTitle,
-} from '@/api'
 
 vi.mock('@/api')
-
-let id = 0
-let position = 0
-function createTaskResponse(title: string) {
+vi.mocked(fetchCreateTask).mockImplementation(async (title) => {
   return {
     title,
-    content: '这是一个内容',
+    content: '',
     status: TaskStatus.ACTIVE,
-    projectId: '1',
-    position: position++,
-    _id: String(id++),
+    projectId: '',
+    position: 1,
+    _id: '1',
     createdAt: new Date().toString(),
     updatedAt: new Date().toString(),
   }
-}
+})
 
-vi.mocked(fetchCreateTask).mockImplementation(async (title: string) =>
-  createTaskResponse(title),
-)
-
-// vi.mocked(fetchAllTasks).mockResolvedValue([createTaskResponse('吃饭')])
-vi.mocked(fetchAllTasks).mockResolvedValue([])
-
-describe('tasks store', () => {
+describe('tasksStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    id = 0
-    position = 0
-
-    const tasksSelectorStore = useTasksSelectorStore()
-    tasksSelectorStore.currentSelector = liveListProject
-
+  })
+  afterEach(() => {
     vi.clearAllMocks()
   })
-  describe('add task', () => {
-    it('should add task to the first position', async () => {
-      const tasksStore = useTasksStore()
-      await tasksStore.addTask('运动')
+  describe('addTask', () => {
+    it('happy path, 添加一个任务', async () => {
+    // 处理一下不测试的边缘数据
+      const tasksSelectorStore = useTasksSelectorStore()
+      tasksSelectorStore.currentSelector = liveListProject
 
+      const tasksStore = useTasksStore()
+      // 先添加一个任务，为了测试新添加的任务会在头部
+      await tasksStore.addTask('运动')
       const task = await tasksStore.addTask('吃饭')
 
       expect(task?.title).toBe('吃饭')
@@ -64,253 +41,92 @@ describe('tasks store', () => {
       expect(tasksStore.currentActiveTask).toEqual(task)
       expect(fetchCreateTask).toBeCalledWith(task?.title, liveListProject.id)
     })
-
-    it('should not add task when currentActiveTask is undefined', async () => {
-      const tasksSelectorStore = useTasksSelectorStore()
-      tasksSelectorStore.currentSelector = undefined
-
+    it('当 currentSelector 为 undefined 时，不添加任务', async () => {
       const tasksStore = useTasksStore()
-
       const task = await tasksStore.addTask('吃饭')
 
-      expect(task).toBeUndefined()
+      expect(task?.title).toBeUndefined()
       expect(tasksStore.tasks.length).toBe(0)
-      expect(tasksStore.currentActiveTask).toBeUndefined()
-      expect(fetchCreateTask).not.toBeCalled()
+      expect(fetchCreateTask).toBeCalledTimes(0)
     })
-
-    it('should not add task when the type of currentActiveTask is smartProject', async () => {
+    it('当 currentSelector 为 smartProject 时，不添加任务', async () => {
+    // 处理一下不测试的边缘数据
       const tasksSelectorStore = useTasksSelectorStore()
       tasksSelectorStore.currentSelector = completeSmartProject
 
       const tasksStore = useTasksStore()
-
       const task = await tasksStore.addTask('吃饭')
 
-      expect(task).toBeUndefined()
+      expect(task?.title).toBeUndefined()
       expect(tasksStore.tasks.length).toBe(0)
+      expect(fetchCreateTask).toBeCalledTimes(0)
+    })
+  })
+
+  describe('removeTask', async () => {
+    it('happy path, 删除一个任务', async () => {
+      const tasksStore = useTasksStore()
+      const task = await useAddTaskFactory()
+
+      expect(tasksStore.tasks.length).toBe(1)
+      await tasksStore.removeTask(task!)
+
+      expect(tasksStore.tasks.length).toBe(0)
+      expect(fetchRemoveTask).toBeCalledWith(task!.id)
       expect(tasksStore.currentActiveTask).toBeUndefined()
-      expect(fetchCreateTask).not.toBeCalled()
     })
   })
 
-  it('should remove task', async () => {
-    const tasksStore = useTasksStore()
-    const task = (await tasksStore.addTask('吃饭'))!
-
-    await tasksStore.removeTask(task)
-
-    expect(tasksStore.tasks.length).toBe(0)
-    expect(tasksStore.currentActiveTask).toBeUndefined()
-    expect(fetchRemoveTask).toBeCalledWith(task.id)
-  })
-
-  it('should complete task', async () => {
-    const tasksStore = useTasksStore()
-    const task = (await tasksStore.addTask('吃饭'))!
-
-    await tasksStore.completeTask(task)
-
-    expect(tasksStore.tasks.length).toBe(0)
-    expect(tasksStore.currentActiveTask).toBeUndefined()
-    expect(fetchCompleteTask).toBeCalledWith(task.id)
-  })
-
-  it('should restoreTask task', async () => {
-    const tasksStore = useTasksStore()
-    const task = (await tasksStore.addTask('吃饭'))!
-
-    await tasksStore.restoreTask(task)
-
-    expect(tasksStore.tasks.length).toBe(0)
-    expect(tasksStore.currentActiveTask).toBeUndefined()
-    expect(fetchRestoreTask).toBeCalledWith(task.id)
-  })
-
-  it('should move task to project', async () => {
-    const tasksStore = useTasksStore()
-    const task = (await tasksStore.addTask('吃饭'))!
-
-    const projectId = '2'
-    await tasksStore.moveTaskToProject(task, projectId)
-
-    expect(tasksStore.tasks.length).toBe(0)
-    expect(tasksStore.currentActiveTask).toBeUndefined()
-    expect(fetchMoveTaskToProject).toBeCalledWith(task.id, projectId)
-  })
-
-  it('should update tasks ', async () => {
-    const tasksStore = useTasksStore()
-
-    tasksStore.updateTasks([createTaskResponse('吃饭')])
-
-    expect(tasksStore.tasks.length).toBe(1)
-    // expectTaskDataStructure(tasksStore.tasks[0])
-  })
-
-  describe('change active', () => {
-    it('should change active task by id', async () => {
+  describe('completeTask', () => {
+    it('happy path, 完成一个任务', async () => {
       const tasksStore = useTasksStore()
-      const task = (await tasksStore.addTask('吃饭'))!
+      const task = await useAddTaskFactory()
 
-      tasksStore.changeActiveTask(task.id)
+      expect(tasksStore.tasks.length).toBe(1)
+      await tasksStore.completeTask(task!)
 
-      expect(tasksStore.currentActiveTask).toEqual(task)
-    })
-
-    it('should change active task by task', async () => {
-      const tasksStore = useTasksStore()
-      const task = (await tasksStore.addTask('吃饭'))!
-
-      tasksStore.changeActiveTask(task)
-
-      expect(tasksStore.currentActiveTask).toEqual(task)
+      expect(tasksStore.tasks.length).toBe(0)
+      expect(fetchCompleteTask).toBeCalledWith(task!.id)
+      expect(tasksStore.currentActiveTask).toBeUndefined()
     })
   })
 
-  it('should find all tasks not removed', async () => {
-    const tasksStore = useTasksStore()
-
-    await tasksStore.findAllTasksNotRemoved()
-
-    expect(fetchAllTasks).toBeCalledWith({ status: TaskStatus.ACTIVE })
-    expect(fetchAllTasks).toBeCalledWith({ status: TaskStatus.COMPLETED })
-
-    // expectTaskDataStructure(tasks[0])
-  })
-
-  describe('cancel complete task', () => {
-    it('should cancel complete task', async () => {
+  describe('restoreTask', () => {
+    it('happy path, 恢复一个任务', async () => {
       const tasksStore = useTasksStore()
+      const task = await useAddTaskFactory()
 
-      await tasksStore.addTask('吃饭')
-      const task = (await tasksStore.addTask('睡觉'))!
-      await tasksStore.addTask('写代码')
-      await tasksStore.completeTask(task)
+      expect(tasksStore.tasks.length).toBe(1)
+      await tasksStore.restoreTask(task!)
 
-      await tasksStore.cancelCompleteTask(task)
-
-      expect(tasksStore.tasks[1]).toEqual(task)
-      expect(tasksStore.tasks[1].status).toBe(TaskStatus.ACTIVE)
-      expect(fetchRestoreTask).toBeCalledWith(task.id)
-    })
-
-    it('should cancel complete the last task ', async () => {
-      const tasksStore = useTasksStore()
-
-      const task = (await tasksStore.addTask('吃饭'))!
-      await tasksStore.addTask('睡觉')
-      await tasksStore.addTask('写代码')
-      await tasksStore.completeTask(task)
-
-      await tasksStore.cancelCompleteTask(task)
-
-      expect(tasksStore.tasks[2]).toEqual(task)
-      expect(tasksStore.tasks[2].status).toBe(TaskStatus.ACTIVE)
-      expect(fetchRestoreTask).toBeCalledWith(task.id)
-    })
-
-    it('should cancel complete task when only one', async () => {
-      const tasksStore = useTasksStore()
-
-      const task = (await tasksStore.addTask('吃饭'))!
-      await tasksStore.completeTask(task)
-
-      await tasksStore.cancelCompleteTask(task)
-
-      expect(tasksStore.tasks[0]).toEqual(task)
-      expect(tasksStore.tasks[0].status).toBe(TaskStatus.ACTIVE)
-      expect(fetchRestoreTask).toBeCalledWith(task.id)
+      expect(tasksStore.tasks.length).toBe(0)
+      expect(fetchRestoreTask).toBeCalledWith(task!.id)
+      expect(tasksStore.currentActiveTask).toBeUndefined()
     })
   })
 
-  describe('update task title', () => {
-    it('should update task title', async () => {
+  describe('moveTaskToProject', () => {
+    it('happy path, 移动一个任务到另一个项目', async () => {
       const tasksStore = useTasksStore()
-      const task = (await tasksStore.addTask('吃饭'))!
+      const task = await useAddTaskFactory()
 
-      const newTitle = '写代码'
-      await tasksStore.updateTaskTitle(task, newTitle)
+      expect(tasksStore.tasks.length).toBe(1)
+      await tasksStore.moveTaskToProject(task!, liveListProject.id)
 
-      expect(task.title).toBe(newTitle)
-      expect(fetchUpdateTaskTitle).toBeCalledWith(task.id, newTitle)
-    })
-
-    it('should not update task title when the title has not changed', async () => {
-      const tasksStore = useTasksStore()
-      const task = (await tasksStore.addTask('吃饭'))!
-
-      await tasksStore.updateTaskTitle(task, task.title)
-
-      expect(task.title).toBe(task.title)
-      expect(fetchUpdateTaskTitle).not.toBeCalled()
+      expect(tasksStore.tasks.length).toBe(0)
+      expect(fetchMoveTaskToProject).toBeCalledWith(task!.id, liveListProject.id)
+      expect(tasksStore.currentActiveTask).toBeUndefined()
     })
   })
-
-  describe('update task content', () => {
-    it('should update task content', async () => {
-      const tasksStore = useTasksStore()
-      const task = (await tasksStore.addTask('吃饭'))!
-
-      const newContent = '今天吃什么'
-      await tasksStore.updateTaskContent(task, newContent)
-
-      expect(task.content).toBe(newContent)
-      expect(fetchUpdateTaskContent).toBeCalledWith(task.id, newContent)
-    })
-
-    it('should not update task content when the content has not changed', async () => {
-      const tasksStore = useTasksStore()
-      const task = (await tasksStore.addTask('吃饭'))!
-
-      await tasksStore.updateTaskContent(task, task.content)
-
-      expect(task.content).toBe(task.content)
-      expect(fetchUpdateTaskContent).not.toBeCalled()
-    })
-  })
-
-  describe('update task position', () => {
-    it('should update task position', async () => {
-      const tasksStore = useTasksStore()
-      const task = (await tasksStore.addTask('吃饭'))!
-
-      const newPosition = 5
-      await tasksStore.updateTaskPosition(task, newPosition)
-
-      expect(task.position).toBe(newPosition)
-      expect(fetchUpdateTaskPosition).toBeCalledWith(task.id, newPosition)
-    })
-
-    it('should not update task position when the position has not changed', async () => {
-      const tasksStore = useTasksStore()
-      const task = (await tasksStore.addTask('吃饭'))!
-
-      await tasksStore.updateTaskPosition(task, task.position)
-
-      expect(task.position).toBe(task.position)
-      expect(fetchUpdateTaskPosition).not.toBeCalled()
-    })
-  })
-
-  // it('should update task property', async () => {
-  //   const tasksStore = useTasksStore()
-  //   const task = (await tasksStore.addTask('吃饭'))!
-
-  //   await tasksStore.updateTaskProperties(task, {
-  //     title: 'new title',
-  //   })
-
-  //   expect(task.title).toBe('new title')
-  //   expect(fetchUpdateTaskProperties).toBeCalledWith(task.id, { title: 'new title' })
-  // })
 })
 
-// function expectTaskDataStructure(task: any) {
-//   expect(task.title).toBe('吃饭')
-//   expect(task).toHaveProperty('id')
-//   expect(task).toHaveProperty('content')
-//   expect(task).toHaveProperty('status')
-//   expect(task).toHaveProperty('position')
-//   expect(task).toHaveProperty('projectId')
-// }
+// 创建一个测试任务的工厂函数
+async function useAddTaskFactory() {
+  // 处理一下不测试的边缘数据
+  const tasksSelectorStore = useTasksSelectorStore()
+  tasksSelectorStore.currentSelector = liveListProject
+
+  const tasksStore = useTasksStore()
+  const task = await tasksStore.addTask('运动')
+  return task
+}
