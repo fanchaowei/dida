@@ -1,22 +1,39 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { TaskStatus, completeSmartProject, useTasksSelectorStore, useTasksStore } from '@/store'
-import { fetchCompleteTask, fetchCreateTask, fetchMoveTaskToProject, fetchRemoveTask, fetchRestoreTask } from '@/api'
+import { fetchAllTasks, fetchCompleteTask, fetchCreateTask, fetchMoveTaskToProject, fetchRemoveTask, fetchRestoreTask } from '@/api'
 import { liveListProject } from '@/tests/fixture'
 
 vi.mock('@/api')
 vi.mocked(fetchCreateTask).mockImplementation(async (title) => {
+  return createTaskResponse(title)
+})
+vi.mocked(fetchAllTasks).mockImplementation(async ({ status }) => {
+  return [createTaskResponse('吃饭', status)]
+})
+// 创建 task 接口返回数据
+function createTaskResponse(title: string, status = TaskStatus.ACTIVE) {
   return {
     title,
     content: '',
-    status: TaskStatus.ACTIVE,
+    status,
     projectId: '',
     position: 1,
     _id: '1',
     createdAt: new Date().toString(),
     updatedAt: new Date().toString(),
   }
-})
+}
+// 创建一个测试任务的工厂函数
+async function useAddTaskFactory(title = '运动') {
+  // 处理一下不测试的边缘数据
+  const tasksSelectorStore = useTasksSelectorStore()
+  tasksSelectorStore.currentSelector = liveListProject
+
+  const tasksStore = useTasksStore()
+  const task = await tasksStore.addTask(title)
+  return task
+}
 
 describe('tasksStore', () => {
   beforeEach(() => {
@@ -24,6 +41,8 @@ describe('tasksStore', () => {
   })
   afterEach(() => {
     vi.clearAllMocks()
+    const tasksStore = useTasksStore()
+    tasksStore.currentActiveTask = undefined
   })
   describe('addTask', () => {
     it('happy path, 添加一个任务', async () => {
@@ -119,15 +138,43 @@ describe('tasksStore', () => {
       expect(tasksStore.currentActiveTask).toBeUndefined()
     })
   })
+
+  describe('updateTasks', () => {
+    it('happy path, 更新所有任务', async () => {
+      const tasksStore = useTasksStore()
+      tasksStore.updateTasks([createTaskResponse('吃饭')])
+      expect(tasksStore.tasks.length).toBe(1)
+    })
+  })
+
+  describe('changeActiveTask', async () => {
+    it('happy path, 传入一个 task, 切换当前活跃任务', async () => {
+      const tasksStore = useTasksStore()
+      const task = await useAddTaskFactory('吃饭')
+
+      tasksStore.currentActiveTask = undefined
+
+      tasksStore.changeActiveTask(task)
+      expect(tasksStore.currentActiveTask).toEqual(task)
+    })
+    it('happy path, 传入一个 task 的 id, 切换当前活跃任务', async () => {
+      const tasksStore = useTasksStore()
+      const task = await useAddTaskFactory('吃饭')
+      tasksStore.currentActiveTask = undefined
+
+      tasksStore.changeActiveTask(task!.id)
+      expect(tasksStore.currentActiveTask).toEqual(task)
+    })
+  })
+
+  describe('findAllTasksNotRemoved', () => {
+    it('happy path, 获取所有未删除的任务', async () => {
+      const tasksStore = useTasksStore()
+
+      const allTasks = await tasksStore.findAllTasksNotRemoved()
+      expect(fetchAllTasks).toBeCalledWith({ status: TaskStatus.ACTIVE })
+      expect(fetchAllTasks).toBeCalledWith({ status: TaskStatus.COMPLETED })
+      expect(allTasks.length).toBe(2)
+    })
+  })
 })
-
-// 创建一个测试任务的工厂函数
-async function useAddTaskFactory() {
-  // 处理一下不测试的边缘数据
-  const tasksSelectorStore = useTasksSelectorStore()
-  tasksSelectorStore.currentSelector = liveListProject
-
-  const tasksStore = useTasksStore()
-  const task = await tasksStore.addTask('运动')
-  return task
-}
