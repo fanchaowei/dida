@@ -175,6 +175,7 @@ importers:
       '@vue/test-utils': ^2.2.10
       '@vueuse/core': ^9.10.0
       axios: ^1.4.0
+      axios-mock-adapter: ^1.21.5
       cross-env: ^7.0.3
       dexie: ^3.2.2
       fake-indexeddb: ^4.0.2
@@ -223,6 +224,7 @@ importers:
       '@vitejs/plugin-vue-jsx': 3.0.0_vite@4.1.1+vue@3.3.4
       '@vue/test-utils': 2.2.10_vue@3.3.4
       '@vueuse/core': 9.12.0_vue@3.3.4
+      axios-mock-adapter: 1.21.5_axios@1.4.0
       cross-env: 7.0.3
       fake-indexeddb: 4.0.2
       flush-promises: 1.0.2
