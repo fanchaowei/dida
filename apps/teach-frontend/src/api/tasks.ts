@@ -59,3 +59,9 @@ export function fetchUpdateTaskPosition(taskId: Task['id'], position: number) {
     position,
   })
 }
+
+export function fetchUpdateTaskProperties(taskId: Task['id'], properties: Partial<Pick<Task, 'title' | 'content' | 'position'>>) {
+  return http.patch<TaskResponse>(`/tasks/${taskId}`, {
+    properties,
+  })
+}
