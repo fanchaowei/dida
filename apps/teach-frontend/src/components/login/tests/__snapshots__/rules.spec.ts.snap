@@ -1,0 +1,52 @@
+// Vitest Snapshot v1
+
+exports[`rules > 表单验证：密码 1`] = `
+[
+  {
+    "message": "请输入密码",
+    "required": true,
+    "trigger": "blur",
+  },
+  {
+    "message": "长度要大于 6 小于 30",
+    "trigger": "blur",
+    "validator": [Function],
+  },
+]
+`;
+
+exports[`rules > 表单验证：用户名 1`] = `
+[
+  {
+    "message": "请输入帐号",
+    "required": true,
+    "trigger": "blur",
+  },
+  {
+    "message": "长度要大于 6 小于 30",
+    "trigger": "blur",
+    "validator": [Function],
+  },
+]
+`;
+
+exports[`rules > 表单验证：确认密码 1`] = `
+[
+  {
+    "message": "请再次输入密码",
+    "required": true,
+    "trigger": [
+      "input",
+      "blur",
+    ],
+  },
+  {
+    "message": "两次密码输入不一致",
+    "trigger": [
+      "blur",
+      "password-input",
+    ],
+    "validator": [Function],
+  },
+]
+`;
